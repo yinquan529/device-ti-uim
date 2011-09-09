@@ -458,12 +458,13 @@ bdaddr_t *strtoba(const char *str)
 /*****************************************************************************/
 int main(int argc, char *argv[])
 {
-	int st_fd, err;
+	int st_fd, err,trials;
 	unsigned char install;
 	struct pollfd 	p;
 
 	UIM_START_FUNC();
 	err = 0;
+	trials = 5;
 
 	/* Parse the user input */
 	if ((argc > 2)) {
@@ -483,7 +484,14 @@ int main(int argc, char *argv[])
 
 	line_discipline = N_TI_WL;
 
-	st_fd = open(INSTALL_SYSFS_ENTRY, O_RDONLY);
+	/* sysfs entry may get populated after service is started so we retry if it fails*/
+	while (trials > 0) {
+		st_fd = open(INSTALL_SYSFS_ENTRY, O_RDONLY);
+		if(st_fd > 0)
+			break;
+		usleep(500000);
+		--trials;
+		}
 	if (st_fd < 0) {
 		UIM_DBG("unable to open %s(%s)", INSTALL_SYSFS_ENTRY, strerror(errno));
 		return -1;
